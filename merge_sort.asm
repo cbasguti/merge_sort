@@ -1,5 +1,5 @@
 .data
-fileIn:		.asciiz "G:\prueba2.txt"
+fileIn:		.asciiz "sentences.txt"
 newLine:	.asciiz "\n"
 space:		.asciiz " - "
 nChars:		.asciiz "Numero de caracteres: "
