@@ -56,6 +56,7 @@ main:
 	#jal pruebaSort
 	jal mergesort
 	jal imprimirArreglo
+	#jal imprimirArchivo
 	
 	done
 	
@@ -96,21 +97,21 @@ leerArchivo:
 	
 contarFrases:
 	
-	add $t9, $zero, $a1			# Guarda la direccion del Buffer en j
-	addi $t1, $zero, 0			# i = 0;
-	addi $t4, $zero, 0			# sentenceCount = 0;
+	add 	$t9, $zero, $a1			# Guarda la direccion del Buffer en j
+	addi 	$t1, $zero, 0			# i = 0;
+	addi 	$t4, $zero, 0			# sentenceCount = 0;
 	
 	WHILE_1:
 
-		beq $t1, $t0, EXIT_1		# while (i != buffer.length)
-		bgt $t1, $t0, EXIT_1		# while (i < buffer.length)
-		lb $t3, 0($t9)			# set char content
+		beq 	$t1, $t0, EXIT_1		# while (i != buffer.length)
+		bgt 	$t1, $t0, EXIT_1		# while (i < buffer.length)
+		lb 	$t3, 0($t9)			# set char content
 
-  		bne $t3, $t2, L1		# branch if !(char[j] == separator)
-  		addi $t4, $t4, 1       		# sentenceCount++;
+  		bne 	$t3, $t2, L1		# branch if !(char[j] == separator)
+  		addi 	$t4, $t4, 1       		# sentenceCount++;
 		L1:
-		addi $t1, $t1, 1        	# i++;
-		addi $t9, $t9, 1		# j++;
+		addi 	$t1, $t1, 1        	# i++;
+		addi 	$t9, $t9, 1		# j++;
 		j WHILE_1
 		
 	EXIT_1:
@@ -228,8 +229,8 @@ mergeloop:
 
 	lw	$t0, 0($s0)		# Load the first half position pointer
 	lw	$t1, 0($s1)		# Load the second half position pointer
-	lw	$t0, 0($t0)		# Load the first half position value
-	lw	$t1, 0($t1)		# Load the second half position value
+	lb	$t0, 0($t0)		# Load the first half position value
+	lb	$t1, 0($t1)		# Load the second half position value
 	
 	
 	bgt	$t1, $t0, noshift	# If the lower value is already first, don't shift
