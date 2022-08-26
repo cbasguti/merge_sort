@@ -80,17 +80,7 @@ leerArchivo:
 	# Cerrar archivo
     	li $v0, 16         			# close_file syscall code
     	move $a0,$s0      			# file descriptor to close
-    	syscall
-	
-	# Imprimir contenido de archivo
-	#printStr fileContent
-	#printStr buffer
-	
-	# Imprimir n de caracteres
-	#printLn
-	#printStr nChars
-	#printInt $t0				# $t0 = buffer.length
-	#printLn 	
+    	syscall	
 	
 	lb $t2, separator			# set separator
 	jr $ra
@@ -115,17 +105,12 @@ contarFrases:
 		j WHILE_1
 		
 	EXIT_1:
-	
-	#printStr nSentences
-	#printInt $t4
-	#printLn	
+		
 	add $t8, $zero, $t4			# Guardando n de frases
 	jr $ra
 	
 construirArreglo:
 
-	#printStr firstLetter
-	#printLn
 	asignarEspacio $t4
 	addi $t6, $v0, 0			# Usar una pila
 	la $s7, ($t6)
@@ -148,6 +133,8 @@ construirArreglo:
  	
  			addi $t5, $zero, 0	# flag = 0;
   			printChar $t9		# print(char[j]);\
+  			printSpace
+  			printInt $t9
   			printLn			# printLn();
   			sw $t9, 0($t6)		# Guardar direccion de $t9 en un arr()
   			addi $t6, $t6, 4	# $t4 = $t4 + 4;
@@ -207,14 +194,7 @@ mergesortend:
 	lw	$ra, 0($sp)		# Load the return address from the stack
 	addi	$sp, $sp, 16		# Adjust the stack pointer
 	jr	$ra			# Return 
-	
-##
-# Merge two sorted, adjacent arrays into one, in-place
-#
-# @param $a0 First address of first array
-# @param $a1 First address of second array
-# @param $a2 Last address of second array
-##
+
 merge:
 	addi	$sp, $sp, -16		# Adjust the stack pointer
 	sw	$ra, 0($sp)		# Store the return address on the stack
@@ -229,9 +209,23 @@ mergeloop:
 
 	lw	$t0, 0($s0)		# Load the first half position pointer
 	lw	$t1, 0($s1)		# Load the second half position pointer
-	lb	$t0, 0($t0)		# Load the first half position value
-	lb	$t1, 0($t1)		# Load the second half position value
+	add	$t2, $zero, $t0
+	add	$t3, $zero, $t1
+	lb	$t0, 0($t2)	# Load the first half position value
+	lb	$t1, 0($t3)	# Load the second half position value
+		
+	beq	$s0, $s1, EXIT_4
 	
+	WHILE_4:
+		
+		bne	$t1, $t0, EXIT_4 # while 
+		addi	$t2, $t2, 1	# i++;
+		addi 	$t3, $t3, 1	# j++;
+		lb	$t0, 0($t2)	# Load the first half position value
+		lb	$t1, 0($t3)	# Load the second half position value
+		j WHILE_4
+		
+	EXIT_4:	
 	
 	bgt	$t1, $t0, noshift	# If the lower value is already first, don't shift
 	
@@ -278,7 +272,7 @@ imprimirArreglo:
 	# En $t6 tengo la dirección de mi vector de direcciones, necesito uno para caracteres
 	addi $t1, $zero, 0		# i = 0;
 	addi $t6, $zero, 268697600
-	addi $t8, $zero, 5
+	addi $t8, $zero, 6
 	WHILE_3:
 	
 		beq $t1, $t8, EXIT_3	# while (i != n_frases)
@@ -287,11 +281,8 @@ imprimirArreglo:
 		printSpace
 		printInt $t2		# direccion de inicio de
 		printLn
-		#lb $t3, 0($t2)
-		#printInt $t3		# Numero int del caracter
-		#printLn
-		#printInt $t6
-		#printLn
+		lb $t3, 0($t2)
+		
 		addi $t1, $t1, 1	# i++;
 		addi $t6, $t6, 4 	# $t6 = $t6 + 4;;
 		j WHILE_3
