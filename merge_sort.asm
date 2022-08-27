@@ -1,12 +1,10 @@
 .data
-fileIn:		.asciiz "sentences.txt"
+fileIn:		.asciiz "input.txt"
+fileOut:	.asciiz	"output.txt"
 newLine:	.asciiz "\n"
 space:		.asciiz " - "
-nChars:		.asciiz "Numero de caracteres: "
-nSentences:	.asciiz "Numero de frases: "
-fileContent:	.asciiz "Contenido de archivo: "
-firstLetter:	.asciiz "Primera letra de cada frase: "
 separator:	.asciiz	"Escriba el separador de sus frases: "
+letra:		.word 	0
 .align 2
 buffer:         .space 5120
 
@@ -67,6 +65,7 @@ leerSeparador:
 	li $v0, 12				# Directiva para ingrsar un caracter
 	syscall
 	move $t2, $v0				# Guardar separador ingresado
+	move $s6, $t2
 	printLn
 	
 	jr $ra	
@@ -87,10 +86,12 @@ leerArchivo:
 	la $a2, 5120				# Tamano maximo del buffer
 	syscall	
 	add $t0, $zero, $v0     		# Guarda el numero de caracteres leidos en $t0
+	move	$s3, $t0
+	
 	
 	# Cerrar archivo
     	li $v0, 16         			# close_file syscall code
-    	move $a0,$s0      			# file descriptor to close
+    	move $a0,$s0     			# file descriptor to close
     	syscall	
 	
 	#lb $t2, separator			# set separator
@@ -98,10 +99,10 @@ leerArchivo:
 	
 contarFrases:
 	
-	add $t9, $zero, $a1			# Guarda la direccion del Buffer en j
-	addi $t1, $zero, 0			# i = 0;
-	addi $t4, $zero, 0			# SentenceCount = 0;
-	addi $t5, $zero, 1			# Aux = 1
+	add 	$t9, $zero, $a1			# Guarda la direccion del Buffer en j
+	addi 	$t1, $zero, 0			# i = 0;
+	addi 	$t4, $zero, 0			# SentenceCount = 0;
+	addi 	$t5, $zero, 1			# Aux = 1
 	
 	add 	$t9, $zero, $a1			# Guarda la direccion del Buffer en j
 	addi 	$t1, $zero, 0			# i = 0;
@@ -149,20 +150,18 @@ construirArreglo:
 	
 		beq 	$t1, $t0, EXIT_2		# while (i != buffer.length)
 		bgt 	$t1, $t0, EXIT_2		# while (i < buffer.length)
-		lb 	$t3, 0($t9)			# set char content
+		lb 	$t3, 0($t9)			# set char content	
 
   		bne $t3, $t2, L3		# branch if !(char[j] == separator)
   		beq $t5, 1, L3			# branch if (aux == 1)
   		addi $t5, $zero, 1		# Aux = 1
+  		printLn
   		
   		L3:
   		beq $t3, $t2, L4		# branch if (char[j] == separator)
-  		bne $t5, 1, L4			# branch if (aux != 1)
-  		addi $t5, $zero, 0		# Aux = 0
   		printChar $t9			# print(char[j]);\
-  		printSpace
-  		printInt $t9
-  		printLn				# printLn();
+  		bne $t5, 1, L4			# branch if (aux != 1)
+  		addi $t5, $zero, 0		# Aux = 0		# printLn();
   		sw $t9, 0($t6)			# Guardar direccion de $t9 en un arr()
   		addi $t6, $t6, 4		# $t4 = $t4 + 4;
 		L4:
@@ -290,27 +289,74 @@ shiftend:
 	
 imprimirArreglo:
 
+	# Abrir archivo
+	li $v0, 13           		# Directiva para abrir archivo
+    	la $a0, fileOut			# $a0 = filePath // sentences.txt
+    	li $a1, 1
+    	li $a2, 0        	
+    	syscall
+    	move $s0,$v0        		# $s0 = file descriptor
+
 	# En $t6 tengo la dirección de mi vector de direcciones, necesito uno para caracteres
-	addi $t1, $zero, 0		# i = 0;
-	addi $t6, $zero, 268697600
-	subi $t4, $t4, 1
+	addi 	$t1, $zero, 0		# i = 0;
+	addi 	$t2, $zero, 0		# j = 0;
+	subi 	$t3, $t4, 1		# $t3 = longitud palabras ordenadas
+	add 	$t6, $zero, $s7		# $t6 = direccion de primeras ordenadas
+	add 	$t8, $zero, $s6		# $t8 = separador
+	
 	WHILE_3:
 	
-		beq $t1, $t4, EXIT_3	# while (i != n_frases)
-		lw $t7, 0($t6)		
-		printChar $t7		
-		printSpace
-		printInt $t7		# direccion de inicio de
-		printLn
-		lb $t3, 0($t2)
+		beq 	$t1, $t3, EXIT_3	# while (i != n_frases)
+		lw 	$t7, 0($t6)		# cargar en t7 la primera letra de la primera ordenada
 		
+		WHILE_5:
+			
+			beq 	$t2, $s3, EXIT_5	# while (i != buffer.length)
+			lb 	$t4, 0($t7)		# cargar en t4 el primer byte
+  			la 	$t5, letra		# cargar en t5 la direccion de frases
+  			
+  			beq 	$t4, $t8, L5		# branch if (char[j] == separator)
+  			printChar $t7
+  			
+  			# Escribir caracter en archivo
+  			sb	$t4, 0($t5)
+  			li 	$v0, 15
+			move 	$a0, $s0
+			la 	$a1, 0($t5)
+			li 	$a2, 1
+			syscall
+			
+			addi 	$t2, $t2, 1        	# j++;
+			addi 	$t7, $t7, 1		# k++;
+			j WHILE_5
+			
+			L5:
+			printLn
+			
+			# Escribir salto de linea en archivo
+			li	$t4, 10
+			sb	$t4, 0($t5)
+  			li 	$v0, 15
+			move 	$a0, $s0
+			la 	$a1, 0($t5)
+			li 	$a2, 1
+			syscall
+		
+		EXIT_5:
+		 
 		addi $t1, $t1, 1	# i++;
 		addi $t6, $t6, 4 	# $t6 = $t6 + 4;;
 		j WHILE_3
-	EXIT_3:
-	
+		
+	EXIT_3:		
+	  
+	# Cerrar archivo
+    	li $v0, 16         			# close_file syscall code
+    	move $a0,$s0     			# file descriptor to close
+    	syscall	
 	jr $ra
-	
 
+	
+	
 	
 	
