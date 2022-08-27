@@ -6,7 +6,7 @@ nChars:		.asciiz "Numero de caracteres: "
 nSentences:	.asciiz "Numero de frases: "
 fileContent:	.asciiz "Contenido de archivo: "
 firstLetter:	.asciiz "Primera letra de cada frase: "
-separator:	.byte   ';'
+separator:	.asciiz	"Escriba el separador de sus frases: "
 .align 2
 buffer:         .space 5120
 
@@ -50,6 +50,7 @@ buffer:         .space 5120
 .text 
 
 main:
+	jal leerSeparador
 	jal leerArchivo
 	jal contarFrases
 	jal construirArreglo
@@ -59,6 +60,16 @@ main:
 	#jal imprimirArchivo
 	
 	done
+	
+	
+leerSeparador:
+	printStr separator
+	li $v0, 12				# Directiva para ingrsar un caracter
+	syscall
+	move $t2, $v0				# Guardar separador ingresado
+	printLn
+	
+	jr $ra	
 	
 leerArchivo:
 
@@ -71,7 +82,7 @@ leerArchivo:
 	
 	# Leer archivo
 	li $v0, 14				# Directiva para leer archivo
-	move $a0,$s0				# $a0 = $s0
+	move $a0, $s0				# $a0 = $s0
 	la $a1, buffer  			# Buffer con el contenido del archivo
 	la $a2, 5120				# Tamano maximo del buffer
 	syscall	
@@ -82,10 +93,15 @@ leerArchivo:
     	move $a0,$s0      			# file descriptor to close
     	syscall	
 	
-	lb $t2, separator			# set separator
+	#lb $t2, separator			# set separator
 	jr $ra
 	
 contarFrases:
+	
+	add $t9, $zero, $a1			# Guarda la direccion del Buffer en j
+	addi $t1, $zero, 0			# i = 0;
+	addi $t4, $zero, 0			# SentenceCount = 0;
+	addi $t5, $zero, 1			# Aux = 1
 	
 	add 	$t9, $zero, $a1			# Guarda la direccion del Buffer en j
 	addi 	$t1, $zero, 0			# i = 0;
@@ -97,12 +113,20 @@ contarFrases:
 		bgt 	$t1, $t0, EXIT_1		# while (i < buffer.length)
 		lb 	$t3, 0($t9)			# set char content
 
-  		bne 	$t3, $t2, L1		# branch if !(char[j] == separator)
-  		addi 	$t4, $t4, 1       		# sentenceCount++;
-		L1:
-		addi 	$t1, $t1, 1        	# i++;
-		addi 	$t9, $t9, 1		# j++;
+  		bne $t3, $t2, L1		# branch if !(char[j] == separator)
+  		beq $t5, 1, L1			# branch if (aux == 1)
+  		addi $t5, $zero, 1		# Aux = 1
+  		
+  		L1:
+  		beq $t3, $t2, L2		# branch if (char[j] == separator)
+  		bne $t5, 1, L2			# branch if (aux != 1)
+  		addi $t5, $zero, 0		# Aux = 0
+  		addi $t4, $t4, 1       		# sentenceCount++;
+		L2:
+		addi $t1, $t1, 1        	# i++;
+		addi $t9, $t9, 1		# j++;
 		j WHILE_1
+	
 		
 	EXIT_1:
 		
@@ -123,31 +147,28 @@ construirArreglo:
 	
 	WHILE_2:
 	
-		beq $t1, $t0, EXIT_2		# while (i != buffer.length)
-		bgt $t1, $t0, EXIT_2		# while (i < buffer.length)
-		lb $t3, 0($t9)			# set char content
-		beq $t1, $zero, IF2		# if (i == 0)
-		bne $t5, 1, END2		# OR !(flag == 1)
-	
-		IF2:
- 	
- 			addi $t5, $zero, 0	# flag = 0;
-  			printChar $t9		# print(char[j]);\
-  			printSpace
-  			printInt $t9
-  			printLn			# printLn();
-  			sw $t9, 0($t6)		# Guardar direccion de $t9 en un arr()
-  			addi $t6, $t6, 4	# $t4 = $t4 + 4;
-  			
-		END2:
+		beq 	$t1, $t0, EXIT_2		# while (i != buffer.length)
+		bgt 	$t1, $t0, EXIT_2		# while (i < buffer.length)
+		lb 	$t3, 0($t9)			# set char content
+
+  		bne $t3, $t2, L3		# branch if !(char[j] == separator)
+  		beq $t5, 1, L3			# branch if (aux == 1)
+  		addi $t5, $zero, 1		# Aux = 1
+  		
+  		L3:
+  		beq $t3, $t2, L4		# branch if (char[j] == separator)
+  		bne $t5, 1, L4			# branch if (aux != 1)
+  		addi $t5, $zero, 0		# Aux = 0
+  		printChar $t9			# print(char[j]);\
+  		printSpace
+  		printInt $t9
+  		printLn				# printLn();
+  		sw $t9, 0($t6)			# Guardar direccion de $t9 en un arr()
+  		addi $t6, $t6, 4		# $t4 = $t4 + 4;
+		L4:
+		addi $t1, $t1, 1        	# i++;
+		addi $t9, $t9, 1		# j++;
 		
-  		bne $t3, $t2, L2	# branch if !(char[j] == separator)
-  		addi $t5, $t5, 1        # flag = 1; TRUE
-  			
-		L2:
-		
-		addi $t1, $t1, 1        # i++;
-		addi $t9, $t9, 1	# j++;
 		j WHILE_2
 	
 	EXIT_2:
@@ -272,14 +293,14 @@ imprimirArreglo:
 	# En $t6 tengo la dirección de mi vector de direcciones, necesito uno para caracteres
 	addi $t1, $zero, 0		# i = 0;
 	addi $t6, $zero, 268697600
-	addi $t8, $zero, 6
+	subi $t4, $t4, 1
 	WHILE_3:
 	
-		beq $t1, $t8, EXIT_3	# while (i != n_frases)
-		lw $t2, 0($t6)		
-		printChar $t2		
+		beq $t1, $t4, EXIT_3	# while (i != n_frases)
+		lw $t7, 0($t6)		
+		printChar $t7		
 		printSpace
-		printInt $t2		# direccion de inicio de
+		printInt $t7		# direccion de inicio de
 		printLn
 		lb $t3, 0($t2)
 		
