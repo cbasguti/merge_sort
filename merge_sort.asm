@@ -1,45 +1,29 @@
 .data
 fileIn:		.asciiz "input.txt"
 fileOut:	.asciiz	"output.txt"
-newLine:	.asciiz "\n"
-space:		.asciiz " - "
+newLine:	.asciiz	"\n"
 separator:	.asciiz	"Escriba el separador de sus frases: "
 letra:		.word 	0
 .align 2
 buffer:         .space 5120
 
 # Declaracion de Macros
-.macro printLn
+.macro printLn	# Macro para salto de línea
   li $v0, 4		
   la $a0, newLine
   syscall
 .end_macro 
-.macro printSpace
-  li $v0, 4		
-  la $a0, space
-  syscall
-.end_macro 
-.macro printStr (%line)
+.macro printStr (%line) # Macro para escribir un string
   li $v0, 4		
   la $a0, %line
   syscall
 .end_macro 
-.macro printInt (%i)
-  li $v0, 1		
-  move $a0, %i
-  syscall
-.end_macro 
-.macro printChar (%c)
-  lb $a0, (%c)
-  li $v0, 11
-  syscall
-.end_macro 
-.macro asignarEspacio (%n_frases)
+.macro asignarEspacio (%n_frases) # Macro para reservar espacio en memoria
   li $v0, 9	
   la $a0, (%n_frases)
   syscall
 .end_macro 
-.macro done
+.macro done	#Macro para finalizar el programa
   li $v0, 10
   syscall
 .end_macro 
@@ -52,250 +36,239 @@ main:
 	jal leerArchivo
 	jal contarFrases
 	jal construirArreglo
-	#jal pruebaSort
 	jal mergesort
-	jal imprimirArreglo
-	#jal imprimirArchivo
+	jal escribirArchivo
 	
 	done
 	
 	
 leerSeparador:
 	printStr separator
-	li $v0, 12				# Directiva para ingrsar un caracter
+	li 	$v0, 12				# Directiva para ingresar un caracter
 	syscall
-	move $t2, $v0				# Guardar separador ingresado
-	move $s6, $t2
+	move 	$t2, $v0			# Guardar el separador ingresado
+	move 	$s6, $t2
 	printLn
 	
-	jr $ra	
+	jr 	$ra	
 	
 leerArchivo:
 
 	# Abrir archivo
-	li $v0, 13           			# Directiva para abrir archivo
-    	la $a0, fileIn    			# $a0 = filePath // sentences.txt
-    	li $a1, 0           	
+	li 	$v0, 13           	# Directiva para abrir archivo
+    	la 	$a0, fileIn    		# $a0 = fileIn // sentences.txt
+    	li 	$a1, 0           		
     	syscall
-    	move $s0,$v0        			# $s0 = file descriptor
+    	move 	$s0,$v0        		# $s0 = descriptor de archivo
 	
 	# Leer archivo
-	li $v0, 14				# Directiva para leer archivo
-	move $a0, $s0				# $a0 = $s0
-	la $a1, buffer  			# Buffer con el contenido del archivo
-	la $a2, 5120				# Tamano maximo del buffer
+	li 	$v0, 14			# Directiva para leer archivo
+	move 	$a0, $s0		# $a0 = $s0
+	la 	$a1, buffer  		# Buffer con el contenido del archivo
+	la 	$a2, 5120		# Tamano maximo del buffer
 	syscall	
-	add $t0, $zero, $v0     		# Guarda el numero de caracteres leidos en $t0
+	add 	$t0, $zero, $v0     	# Guarda el numero de caracteres leidos en $t0
 	move	$s3, $t0
 	
 	
 	# Cerrar archivo
-    	li $v0, 16         			# close_file syscall code
-    	move $a0,$s0     			# file descriptor to close
+    	li 	$v0, 16         	# Directiva para cerrar archivo
+    	move 	$a0,$s0     		# $a0 = descriptor de archivo
     	syscall	
 	
-	#lb $t2, separator			# set separator
-	jr $ra
+	jr 	$ra
 	
+# Procedimiento para contar el número de frases
 contarFrases:
 	
-	add $t9, $zero, $a1			# Save buffer address in j
-	addi $t1, $zero, 0			# i = 0;
-	addi $t4, $zero, 0			# SentenceCount = 0;
-	addi $t5, $zero, 1			# Aux = 1
+	# Inicialización de variables
+	add 	$t9, $zero, $a1		# j = dirección inicial del Buffer
+	addi 	$t1, $zero, 0		# i = 0;
+	addi 	$t4, $zero, 0		# SentenceCount = 0;
+	addi 	$t5, $zero, 1		# Aux = 1;
 	
 	WHILE_1:
 
 		beq 	$t1, $t0, EXIT_1	# while (i != buffer.length)
-		bgt 	$t1, $t0, EXIT_1	# while (i < buffer.length)
-		lb 	$t3, 0($t9)		# set char content
+		lb 	$t3, 0($t9)		# $t3 = buffer[j]; // primer caracter del archivo
 
-  		bne $t3, $t2, L1		# branch if !(char[j] == separator)
-  		beq $t5, 1, L1			# branch if (aux == 1)
-  		addi $t5, $zero, 1		# Aux = 1
+  		bne 	$t3, $t2, L1		# branch if !(char[j] == separator)
+  		beq 	$t5, 1, L1		# branch if (aux == 1)
+  		addi 	$t5, $zero, 1		# Aux = 1;
   		
   		L1:
-  		beq $t3, $t2, L2		# branch if (char[j] == separator)
-  		bne $t5, 1, L2			# branch if (aux != 1)
-  		addi $t5, $zero, 0		# Aux = 0
-  		addi $t4, $t4, 1       		# sentenceCount++;
+  		beq 	$t3, $t2, L2		# branch if (char[j] == separator)
+  		bne 	$t5, 1, L2		# branch if (aux != 1)
+  		addi 	$t5, $zero, 0		# Aux = 0;
+  		addi 	$t4, $t4, 1     	# sentenceCount++;
 		L2:
-		addi $t1, $t1, 1        	# i++;
-		addi $t9, $t9, 1		# j++;
-		j WHILE_1
+		addi 	$t1, $t1, 1     	# i++;
+		addi 	$t9, $t9, 1		# j++;
+		j 	WHILE_1
 	
-		
 	EXIT_1:
 		
-	add $t8, $zero, $t4			# saving n sentences
-	jr $ra
-	
+	add 	$t8, $zero, $t4		# saving n sentences
+	jr 	$ra
+
+# Procedimiento para almacenar el la dirección del primer caracter de cada frase en un espacio
+# en un espacio asignado en memoria, cuyo tamaño es la cantidad de frases que se contaron en 
+# el procedimiento anterior.
 construirArreglo:
 
-	asignarEspacio $t4
-	addi $t6, $v0, 0			# Using a stack
-	la $s7, ($t6)
+	asignarEspacio $t4		# Macro para asignar espacio $t4 en memoria
+	addi 	$t6, $v0, 0		# Guardar la dirección del espacio asignado en $t6
+	la 	$s7, ($t6)		# Guardarla también en $s7
 	
-	addi $sp, $sp, -4			# Adjust stack pointer
-	sw $t6, 0($sp)
-	add $t9, $zero, $a1			# Save Buffer address in j
-	addi $t1, $zero, 0			# i = 0;
-	addi $t5, $zero, 1			# Aux = 1;
+	addi 	$sp, $sp, -4		# Ajustar apuntar de la pila
+	sw 	$t6, 0($sp)		# Almacenar en la pila direccion inicial del espacio asignado
+	add 	$t9, $zero, $a1		# j = dirección inicial del Buffer;
+	addi 	$t1, $zero, 0		# i = 0;
+	addi 	$t5, $zero, 1		# Aux = 1;
 	
 	WHILE_2:
 	
 		beq 	$t1, $t0, EXIT_2	# while (i != buffer.length)
-		bgt 	$t1, $t0, EXIT_2	# while (i < buffer.length)
-		lb 	$t3, 0($t9)		# set char content
+		lb 	$t3, 0($t9)		# $t3 = buffer[j]; // primer caracter del archivo
 
-  		bne $t3, $t2, L3		# branch if !(char[j] == separator)
-  		beq $t5, 1, L3			# branch if (aux == 1)
-  		addi $t5, $zero, 1		# Aux = 1
+  		bne 	$t3, $t2, L3		# branch if !(char[j] == separator)
+  		beq 	$t5, 1, L3		# branch if (aux == 1)
+  		addi 	$t5, $zero, 1		# Aux = 1;
   		
   		L3:
-  		beq $t3, $t2, L4		# branch if (char[j] == separator)
-  		bne $t5, 1, L4			# branch if (aux != 1)
-  		addi $t5, $zero, 0		# Aux = 0
-  		printChar $t9			# print(char[j]);\
-  		printSpace
-  		printInt $t9
-  		printLn				# printLn();
-  		sw $t9, 0($t6)			# Save t9 address in a  arr()
-  		addi $t6, $t6, 4		
+  		beq 	$t3, $t2, L4		# branch if (char[j] == separator)
+  		bne 	$t5, 1, L4		# branch if (aux != 1)
+  		addi 	$t5, $zero, 0		# Aux = 0;			
+  		sw	$t9, 0($t6)		# Guardar la dirección en t9 en el espacio asignado
+  		addi 	$t6, $t6, 4		# Avanza a la siguiente posición del espacio asignado
 		L4:
-		addi $t1, $t1, 1        	# i++;
-		addi $t9, $t9, 1		# j++;
+		addi 	$t1, $t1, 1        	# i++;
+		addi 	$t9, $t9, 1		# j++;
 		
-		j WHILE_2
+		j 	WHILE_2
 	
 	EXIT_2:
 	
-	printSpace
-  	printLn
+	la 	$a1, ($t6)		# Carga en a1, la dirección final del espacio asignado
+	lw 	$t6, 0($sp)		# Recupera de la pila la dirección inicial
+	la 	$a0, ($t6)		# Carga en a0, la dirección inicial del espacio asignado
+	jr 	$ra
 	
-	la $a1, ($t6)
-	lw $t6, 0($sp)
-	la $a0, ($t6)
-	jr $ra
-	
+# Procedimiento con el que comienza el ordenamiento merge sort.
 mergesort:
 
-	addi	$sp, $sp, -16		# Adjust stack pointer
-	sw	$ra, 0($sp)		# Store the return address on the stack
-	sw	$a0, 4($sp)		# Store the array start address on the stack
-	sw	$a1, 8($sp)		# Store the array end address on the stack
+	addi	$sp, $sp, -16		# Ajusta el apuntador de la pila
+	sw	$ra, 0($sp)		# Almacena la dirección de retorno en la pila
+	sw	$a0, 4($sp)		# Almacena la dirección de inicio del arreglo en la pila
+	sw	$a1, 8($sp)		# Almacena la dirección de fin del arreglo en la pila
 	
-	sub 	$t0, $a1, $a0		# Calculate the difference between the start and end address (i.e. number of elements * 4)
+	sub 	$t0, $a1, $a0		# Calcular diferencia entre dirección de inicio y de fin
 
-	ble	$t0, 4, mergesortend	# If the array only contains a single element, just return
+	ble	$t0, 4, mergesortend	# Si el arreglo tiene un solo elemento, retornar
 	
-	srl	$t0, $t0, 3		# Divide the array size by 8 to half the number of elements (shift right 3 bits)
-	sll	$t0, $t0, 2		# Multiple that number by 4 to get half of the array size (shift left 2 bits)
-	add	$a1, $a0, $t0		# Calculate the midpoint address of the array
-	sw	$a1, 12($sp)		# Store the array midpoint address on the stack
+	srl	$t0, $t0, 3		# Dividir el tamaño del arreglo por 8 para reducir el número de elementos a la mitad
+	sll	$t0, $t0, 2		# Multiplicar el número por 4 para obtener el tamaño de la mitad del arreglo
+	add	$a1, $a0, $t0		# Calcular el punto de acceso medio al arreglo
+	sw	$a1, 12($sp)		# Almacenar el punto medio de acceso en al pila
 	
-	jal	mergesort		# Call recursively on the first half of the array
+	jal	mergesort		# Llamarse recursivamente para la primera mitad del arreglo
 	
-	lw	$a0, 12($sp)		# Load the midpoint address of the array from the stack
-	lw	$a1, 8($sp)		# Load the end address of the array from the stack
+	lw	$a0, 12($sp)		# Cargar el punto medio de acceso de la pila
+	lw	$a1, 8($sp)		# Cargar la direccion fin del arreglo de la pila
 	
-	jal	mergesort		# Call recursively on the second half of the array
+	jal	mergesort		# Llamarse recursivamente para la segunda mitad del arreglo
 	
-	lw	$a0, 4($sp)		# Load the array start address from the stack
-	lw	$a1, 12($sp)		# Load the array midpoint address from the stack
-	lw	$a2, 8($sp)		# Load the array end address from the stack
+	lw	$a0, 4($sp)		# Cargar la direccion de inicio de la pila
+	lw	$a1, 12($sp)		# Cargar el punto medio de acceso de la pila
+	lw	$a2, 8($sp)		# Cargar la direccion de fin de la pila
 	
-	jal	merge			# Merge the two array halves
+	jal	merge			# Aplicar "merge" a las dos mitades del arreglo
 	
 mergesortend:				
 
-	lw	$ra, 0($sp)		# Load the return address from the stack
-	addi	$sp, $sp, 16		# Adjust the stack pointer
-	jr	$ra			# Return 
+	lw	$ra, 0($sp)		# Cargar la dirección de retorno de la pila, la dirección de "mergesort"
+	addi	$sp, $sp, 16		# Ajustar el apuntador
+	jr	$ra			
 
+# Procedimiento merge para las mitades del arreglo
 merge:
-	addi	$sp, $sp, -16		# Adjust the stack pointer
-	sw	$ra, 0($sp)		# Store the return address on the stack
-	sw	$a0, 4($sp)		# Store the start address on the stack
-	sw	$a1, 8($sp)		# Store the midpoint address on the stack
-	sw	$a2, 12($sp)		# Store the end address on the stack
+	addi	$sp, $sp, -16		# Ajustar el apuntador
+	sw	$ra, 0($sp)		# Almacena la dirección de retorno en la pila
+	sw	$a0, 4($sp)		# Almacena la dirección de inicio del arreglo en la pila
+	sw	$a1, 8($sp)		# Almacena el punto medio de acceso del arreglo en la pila
+	sw	$a2, 12($sp)		# Almacena la dirección de fin del arreglo en la pila
 	
-	move	$s0, $a0		# Create a working copy of the first half address
-	move	$s1, $a1		# Create a working copy of the second half address
+	move	$s0, $a0		# Copia de la dirección de la primera mitad
+	move	$s1, $a1		# Copia de la dirección de la segunda mitad
 	
 mergeloop:
 
-	lw	$t0, 0($s0)		# Load the first half position pointer
-	lw	$t1, 0($s1)		# Load the second half position pointer
+	lw	$t0, 0($s0)		# Cargar la dirección de la primera mitad
+	lw	$t1, 0($s1)		# Cargar la dirección de la segunda mitad
 	add	$t2, $zero, $t0
 	add	$t3, $zero, $t1
-	lb	$t0, 0($t2)	# Load the first half position value
-	lb	$t1, 0($t3)	# Load the second half position value
+	lb	$t0, 0($t2)		# Cargar el valor del elemento de la primera mitad
+	lb	$t1, 0($t3)		# Cargar el valor del elemento de la segunda mitad
 		
-	beq	$s0, $s1, EXIT_4
+	beq	$s0, $s1, EXIT_4	# Si son iguales s0 y s1, se compararía un elemento consigo mismo
 	
+	# Ciclo para avanzar caracter de una palabra en caso de que la primera sea igual
+	# e.j.: abeja < avion
 	WHILE_4:
 		
-		bne	$t1, $t0, EXIT_4 # while 
-		addi	$t2, $t2, 1	# i++;
-		addi 	$t3, $t3, 1	# j++;
-		lb	$t0, 0($t2)	# Load the first half position value
-		lb	$t1, 0($t3)	# Load the second half position value
-		j WHILE_4
+		bne	$t1, $t0, EXIT_4 	# while s0 = s1
+		addi	$t2, $t2, 1		# i++;
+		addi 	$t3, $t3, 1		# j++;
+		lb	$t0, 0($t2)		# Cargar el valor del siguiente caracter del elemento de la primera mitad
+		lb	$t1, 0($t3)		# Cargar el valor del siguiente caracter del elemento de la segunda mitad
+		j 	WHILE_4
 		
 	EXIT_4:	
 	
-	bgt	$t1, $t0, noshift	# If the lower value is already first, don't shift
+	bgt	$t1, $t0, noshift	# Si el menor valor ya está primero, no hay que moverlo
 	
-	move	$a0, $s1		# Load the argument for the element to move
-	move	$a1, $s0		# Load the argument for the address to move it to
-	jal	shift			# Shift the element to the new position 
+	move	$a0, $s1		# Cargar argumento con el elemento a mover
+	move	$a1, $s0		# Cargar argumento con la dirección a donde mover el elemento
+	jal	shift			# Cambiar de posición el elemento
 	
-	addi	$s1, $s1, 4		# Increment the second half index
+	addi	$s1, $s1, 4		# Aumentar el indice de la segunda mitad
 noshift:
-	addi	$s0, $s0, 4		# Increment the first half index
+	addi	$s0, $s0, 4		# Aumentar el indice de la primera mitad
 	
-	lw	$a2, 12($sp)		# Reload the end address
-	bge	$s0, $a2, mergeloopend	# End the loop when both halves are empty
-	bge	$s1, $a2, mergeloopend	# End the loop when both halves are empty
+	lw	$a2, 12($sp)		# Recargar la dirección de fin del arreglo de la pila
+	bge	$s0, $a2, mergeloopend	# Fin del loop cuando ambas mitades estan vacias
+	bge	$s1, $a2, mergeloopend	# =============================================
 	b	mergeloop
 	
 mergeloopend:
 	
-	lw	$ra, 0($sp)		# Load the return address
-	addi	$sp, $sp, 16		# Adjust the stack pointer
-	jr 	$ra			# Return
+	lw	$ra, 0($sp)		# Carga la dirección de retorno de la pila, la dirección de "merge"
+	addi	$sp, $sp, 16		# Ajusta el apuntador
+	jr 	$ra		
 
-##
-# Shift an array element to another position, at a lower address
-#
-# @param $a0 address of element to shift
-# @param $a1 destination address of element
-##
 shift:
 	li	$t0, 10
-	ble	$a0, $a1, shiftend	# If we are at the location, stop shifting
-	addi	$t6, $a0, -4		# Find the previous address in the array
-	lw	$t7, 0($a0)		# Get the current pointer
-	lw	$t8, 0($t6)		# Get the previous pointer
-	sw	$t7, 0($t6)		# Save the current pointer to the previous address
-	sw	$t8, 0($a0)		# Save the previous pointer to the current address
-	move	$a0, $t6		# Shift the current position back
-	b 	shift			# Loop again
+	ble	$a0, $a1, shiftend	# Si se está en la posición destino, no hay que mover
+	addi	$t6, $a0, -4		# Encontrar la dirección anterior en el arreglo
+	lw	$t7, 0($a0)		# Cargar el apuntador actual
+	lw	$t8, 0($t6)		# Cargar el apuntador previo
+	sw	$t7, 0($t6)		# Guardar el apuntador actual a la direccion previa
+	sw	$t8, 0($a0)		# Guardar el apuntador previo a la direccion actual
+	move	$a0, $t6		# Mover la posición actual, de nuevo a a0
+	b 	shift			
 shiftend:
-	jr	$ra			# Return
+	jr	$ra			
 	
-imprimirArreglo:
+escribirArchivo:
 
 	# Abrir archivo
-	li $v0, 13           		# Directiva para abrir archivo
-    	la $a0, fileOut			# $a0 = filePath // sentences.txt
-    	li $a1, 1
-    	li $a2, 0        	
+	li 	$v0, 13           	# Directiva para abrir archivo
+    	la 	$a0, fileOut		# $a0 = filePath // sentences.txt
+    	li 	$a1, 1
+    	li 	$a2, 0        	
     	syscall
-    	move $s0,$v0        		# $s0 = file descriptor
+    	move 	$s0,$v0        		# $s0 = descriptor de archivo
 
-	# En $t6 tengo la dirección de mi vector de direcciones, necesito uno para caracteres
 	addi 	$t1, $zero, 0		# i = 0;
 	addi 	$t2, $zero, 0		# j = 0;
 	addi 	$t3, $t4, 0		# $t3 = longitud palabras ordenadas
@@ -314,7 +287,6 @@ imprimirArreglo:
   			la 	$t5, letra		# cargar en t5 la direccion de frases
   			
   			beq 	$t4, $t8, L5		# branch if (char[j] == separator)
-  			printChar $t7
   			
   			# Escribir caracter en archivo
   			sb	$t4, 0($t5)
@@ -326,10 +298,9 @@ imprimirArreglo:
 			
 			addi 	$t2, $t2, 1        	# j++;
 			addi 	$t7, $t7, 1		# k++;
-			j WHILE_5
+			j 	WHILE_5
 			
 			L5:
-			printLn
 			
 			# Escribir salto de linea en archivo
 			li	$t4, 10
@@ -342,17 +313,17 @@ imprimirArreglo:
 		
 		EXIT_5:
 		 
-		addi $t1, $t1, 1	# i++;
-		addi $t6, $t6, 4 	# $t6 = $t6 + 4;;
-		j WHILE_3
+		addi 	$t1, $t1, 1	# i++;
+		addi 	$t6, $t6, 4 	# $t6 = $t6 + 4;;
+		j 	WHILE_3
 		
 	EXIT_3:		
 	  
 	# Cerrar archivo
-    	li $v0, 16         			# close_file syscall code
-    	move $a0,$s0     			# file descriptor to close
+    	li 	$v0, 16         	# Directiva para cerrar archivo
+    	move 	$a0,$s0     		# $a0 = descriptor de archivo
     	syscall	
-	jr $ra
+	jr 	$ra
 
 	
 	
