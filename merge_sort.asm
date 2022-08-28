@@ -99,20 +99,16 @@ leerArchivo:
 	
 contarFrases:
 	
-	add 	$t9, $zero, $a1			# Guarda la direccion del Buffer en j
-	addi 	$t1, $zero, 0			# i = 0;
-	addi 	$t4, $zero, 0			# SentenceCount = 0;
-	addi 	$t5, $zero, 1			# Aux = 1
-	
-	add 	$t9, $zero, $a1			# Guarda la direccion del Buffer en j
-	addi 	$t1, $zero, 0			# i = 0;
-	addi 	$t4, $zero, 0			# sentenceCount = 0;
+	add $t9, $zero, $a1			# Save buffer address in j
+	addi $t1, $zero, 0			# i = 0;
+	addi $t4, $zero, 0			# SentenceCount = 0;
+	addi $t5, $zero, 1			# Aux = 1
 	
 	WHILE_1:
 
-		beq 	$t1, $t0, EXIT_1		# while (i != buffer.length)
-		bgt 	$t1, $t0, EXIT_1		# while (i < buffer.length)
-		lb 	$t3, 0($t9)			# set char content
+		beq 	$t1, $t0, EXIT_1	# while (i != buffer.length)
+		bgt 	$t1, $t0, EXIT_1	# while (i < buffer.length)
+		lb 	$t3, 0($t9)		# set char content
 
   		bne $t3, $t2, L1		# branch if !(char[j] == separator)
   		beq $t5, 1, L1			# branch if (aux == 1)
@@ -131,39 +127,41 @@ contarFrases:
 		
 	EXIT_1:
 		
-	add $t8, $zero, $t4			# Guardando n de frases
+	add $t8, $zero, $t4			# saving n sentences
 	jr $ra
 	
 construirArreglo:
 
 	asignarEspacio $t4
-	addi $t6, $v0, 0			# Usar una pila
+	addi $t6, $v0, 0			# Using a stack
 	la $s7, ($t6)
 	
 	addi $sp, $sp, -4			# Adjust stack pointer
 	sw $t6, 0($sp)
-	add $t9, $zero, $a1			# Guarda la direccion del Buffer en j
+	add $t9, $zero, $a1			# Save Buffer address in j
 	addi $t1, $zero, 0			# i = 0;
-	addi $t5, $zero, 0			# flag = 0; Se ouede quitar
+	addi $t5, $zero, 1			# Aux = 1;
 	
 	WHILE_2:
 	
-		beq 	$t1, $t0, EXIT_2		# while (i != buffer.length)
-		bgt 	$t1, $t0, EXIT_2		# while (i < buffer.length)
-		lb 	$t3, 0($t9)			# set char content	
+		beq 	$t1, $t0, EXIT_2	# while (i != buffer.length)
+		bgt 	$t1, $t0, EXIT_2	# while (i < buffer.length)
+		lb 	$t3, 0($t9)		# set char content
 
   		bne $t3, $t2, L3		# branch if !(char[j] == separator)
   		beq $t5, 1, L3			# branch if (aux == 1)
   		addi $t5, $zero, 1		# Aux = 1
-  		printLn
   		
   		L3:
   		beq $t3, $t2, L4		# branch if (char[j] == separator)
-  		printChar $t9			# print(char[j]);\
   		bne $t5, 1, L4			# branch if (aux != 1)
-  		addi $t5, $zero, 0		# Aux = 0		# printLn();
-  		sw $t9, 0($t6)			# Guardar direccion de $t9 en un arr()
-  		addi $t6, $t6, 4		# $t4 = $t4 + 4;
+  		addi $t5, $zero, 0		# Aux = 0
+  		printChar $t9			# print(char[j]);\
+  		printSpace
+  		printInt $t9
+  		printLn				# printLn();
+  		sw $t9, 0($t6)			# Save t9 address in a  arr()
+  		addi $t6, $t6, 4		
 		L4:
 		addi $t1, $t1, 1        	# i++;
 		addi $t9, $t9, 1		# j++;
@@ -300,7 +298,7 @@ imprimirArreglo:
 	# En $t6 tengo la dirección de mi vector de direcciones, necesito uno para caracteres
 	addi 	$t1, $zero, 0		# i = 0;
 	addi 	$t2, $zero, 0		# j = 0;
-	subi 	$t3, $t4, 1		# $t3 = longitud palabras ordenadas
+	addi 	$t3, $t4, 0		# $t3 = longitud palabras ordenadas
 	add 	$t6, $zero, $s7		# $t6 = direccion de primeras ordenadas
 	add 	$t8, $zero, $s6		# $t8 = separador
 	
